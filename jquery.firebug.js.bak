@@ -1,0 +1,29 @@
+if (!window.console || !console.firebug) {
+    var names = ["log", "debug", "info", "warn", "error", "assert", "dir", "dirxml",
+    "group", "groupEnd", "time", "timeEnd", "count", "trace", "profile", "profileEnd"];
+
+    if(!window.console) window.console = {};
+
+    for (name in names) {
+        if(!window.console[name]) {
+            window.console[name] = function() {for(arg in arguments){alert(arg);};};
+        }
+    }
+
+    jQuery.getScript("http://cachefile.net/scripts/firebuglite/1.0-b1/firebug.js",function(){alert("loaded");});
+}
+
+function jQueryDebug(method){ 
+    return (function() {
+        var args = jQuery.makeArray(arguments);
+        return this.each(function(i) {
+            console[method].apply(this, args.concat(this));
+        });
+    });
+}
+
+for(method in console) {
+    if(typeof console[method] == "function") {
+        jQuery.fn[method] = jQueryDebug(method);
+    }
+}

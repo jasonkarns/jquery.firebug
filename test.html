@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+         "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" debug="true">
+<head>
+<title>jQuery.Firebug</title>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<!-- this stylesheet only used by jquery.firebug.js not jquery.firebuglite.js -->
+<script type="text/javascript" src="jquery-1.2.3.js"></script>
+<!--
+<script type="text/javascript" src="firebuglite/firebug.js"></script>
+<script type="text/javascript" src="firebuglite/firebug.js"></script>
+<link rel="stylesheet" type="text/css" href="jquery.firebug.css" />
+-->
+<script type="text/javascript" src="jquery.firebuglite.js"></script>
+<script type="text/javascript">
+jQuery(document).ready(function(){
+    var test = {
+        vars: {
+            arr1: new Array(),
+            arr2: ["key", "value"],
+            str1: "string",
+            str2: new String("string"),
+            json1: {
+                "key": "Value",
+                test: 3
+            },
+            bool1: true,
+            bool2: new Boolean(),
+            obj1: new Date(),
+            func1: function tempFunc(){
+            }
+        },
+        log: function(){
+            $("h2").log(test.vars.obj1);
+        },
+        debug: function(){
+            $("h2").debug(test.vars.obj1);
+        },
+        info: function(){
+            $("h2").info("info");
+        },
+        warn: function(){
+            $("h2").warn("warn");
+        },
+        error: function(){
+            $("h2").error("error");
+        },
+        assert: function(){
+            $("#tree").assert(false);
+        },
+        dir: function(){
+            $("#tree").dir("dir label");
+        },
+        dirxml: function(){
+            $("#tree").dirxml("label");
+        },
+        trace: function(){
+            $("#tree").trace();
+        },
+        group: function(){
+            $("h2").group("group test1");
+            test.log();
+            test.info();
+            test.warn();
+            test.error();
+            $("h2").groupEnd();
+            
+            $("h2").group("group test2").log("log").info("info").warn("warn").error("error").groupEnd();
+        },
+        time: function(){
+            $("h2").time("time test").log(test.vars.str1, test.vars.str2, test.vars.func1, test.vars.arr1, test.vars.arr2, test.vars.json1, test.vars.bool1, test.vars.bool2, test.vars.obj1).log("wait").timeEnd("time test");
+        },
+        profile: function(){
+            $("h2").profile("profile test").log(test.vars.str1, test.vars.str2, test.vars.func1, test.vars.arr1, test.vars.arr2, test.vars.json1, test.vars.bool1, test.vars.bool2, test.vars.obj1).log("wait").profileEnd();
+        },
+        count: function(){
+            $("#tree").count("count");
+        }
+    }
+    test.vars.arr1.push("one");
+    test.vars.arr1.push("two");
+    
+    $("#log").click(test.log);
+    $("#debug").click(test.debug);
+    $("#info").click(test.info);
+    $("#warn").click(test.warn);
+    $("#error").click(test.error);
+    $("#assert").click(test.assert);
+    $("#dir").click(test.dir);
+    $("#dirxml").click(test.dirxml);
+    $("#trace").click(test.trace);
+    $("#group").click(test.group);
+    $("#time").click(test.time);
+    $("#profile").click(test.profile);
+    $("#count").click(test.count);
+});
+</script>
+</head>
+<body>
+<h1>test</h1>
+<h2 id="h2one">one</h2>
+<h2 class="some class">two</h2>
+<div id="tree">
+    <div>
+        <!--comment node-->
+        <?xml processing instruction node ?>
+        <!CDATA[[ some cdata ]]>
+        <p>
+            <span><code>span</code> 1</span>
+            <span><code>span</code> 2</span>
+        </p>
+    </div>
+</div>
+<h3>Tests</h3>
+<ul>
+    <li id="log"><a href="#log" title="Test: log">log</a></li>
+    <li id="debug"><a href="#debug" title="Test: debug">debug</a></li>
+    <li id="info"><a href="#info" title="Test: info">info</a></li>
+    <li id="warn"><a href="#warn" title="Test: warn">warn</a></li>
+    <li id="error"><a href="#error" title="Test: error">error</a></li>
+    <li id="assert"><a href="#assert" title="Test: assert">assert</a></li>
+    <li id="dir"><a href="#dir" title="Test: dir">dir</a></li>
+    <li id="dirxml"><a href="#dirxml" title="Test: dirxml">dirxml</a></li>
+    <li id="trace"><a href="#trace" title="Test: trace">trace</a></li>
+    <li id="group"><a href="#group" title="Test: group">group</a></li>
+    <li id="time"><a href="#time" title="Test: time">time</a></li>
+    <li id="profile"><a href="#profile" title="Test: profile">profile</a></li>
+    <li id="count"><a href="#count" title="Test: count">count</a></li>
+</ul>
+</body>
+</html>

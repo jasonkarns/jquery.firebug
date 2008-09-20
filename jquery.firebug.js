@@ -1,250 +1,140 @@
 /*global jQuery, DEBUG */
+
+/*
+ * TODO: support count, trace, profile, and profileEnd for Firebug Lite
+ * TODO: integrate firebug.watchXHR better
+ */
+/*** this block must never be used in an embedded script ***/
+// determine DEBUG setting from this script tag
+eval(document.getElementsByTagName("script")[document.getElementsByTagName("script").length-1].innerHTML);
 if (window.DEBUG === undefined) {
     var DEBUG = true;
 }
+/***********************************************************/
+
 (function ($) {
     var methods = ["assert",
                 "log", "debug", "info", "warn", "error", "dir", "dirxml",
                 "count", "trace", "group", "groupEnd", "time", "timeEnd", "profile", "profileEnd"];
 
-    function firebug() {
-        var debugIdStack = ["DBG_LOG"];
-        var timerStack = [];
+    // create basic console object if it doesn't exist
+    if (!window.console) {
+        window.console = {};
+    }
 
-        $(document).ready(function () {
-            $(document.body).append('<div id="DEBUG"><span id="DBG_BAR"><a id="DBG_CLOSE" title="close the debug log">Close</a><a id="DBG_CLEAR" title="clear the debug log">Clear</a></span><ol id="DBG_LOG"></ol></div>');
-            $("#DEBUG").click(function (e) {
-                $(e.target).toggleClass("open");
-                $("ul, ol, dl", e.target).slideToggle("slow");
-            });
-            $("#DBG_CLOSE").click(function (e) {
-                $("#DBG_LOG").slideToggle("slow");
-                $(this).text($(this).text() === "Open" ? "Close" : "Open");
-                return false;
-            });
-            $("#DBG_CLEAR").click(function (e) {
-                $("#DBG_LOG").children().remove();
-                return false;
-            });
-
-        });
-        
-        function getFunctionName(theFunction) {
-            // mozilla makes it easy. I love mozilla.
-            if (theFunction.name) {
-                return theFunction.name;
-            }
-            // try to parse the function name from the defintion 
-            var definition = theFunction.toString();
-            var name = definition.substring(definition.indexOf('function') + 9, definition.indexOf('('));
-            if (name) {
-                return name;
-            }
-            // dynamic/anonymous functions 
-            return "_anonymous";
-        }
-        
-        function printArguments(args) {
-            var msg = "";
-            for (var arg = 0; arg < args.length; arg += 1) {
-                // print DOM elements
-                if (args[arg].nodeType && args[arg].nodeType === 1) {
-                    msg += "&lt;" + args[arg].nodeName.toLowerCase();
-                    if (args[arg].hasAttributes && args[arg].hasAttributes()) {
-                        if (args[arg].getAttribute('id')) {
-                            msg += ' id="' + args[arg].getAttribute('id') + '"';
-                        }
-                        if (args[arg].getAttribute('class')) {
-                            msg += ' class="' + args[arg].getAttribute('class') + '"';
-                        }
-                        if (args[arg].getAttribute('title')) {
-                            msg += ' title="' + args[arg].getAttribute('title') + '"';
-                        }
-                    }
-                    msg += "&gt;";
-                }
-                // print functions
-                else if (typeof args[arg] === 'function') {
-                    var funcName = getFunctionName(args[arg]) || "function";
-                    msg += funcName + "()";
-                }
-                // print booleans
-                else if (typeof args[arg] === 'boolean') {
-                    msg += args[arg] + " ";
-                }
-                // print numbers and strings
-                else if (typeof args[arg] === 'number' || typeof args[arg] === 'string' || args[arg].constructor.toString().match(/string/i)) {
-                    msg += args[arg] + " ";
-                }
-                // print source for arrays/objects
-                else {
-                    // use toSource() if available
-                    if (args[arg].toSource) {
-                        msg += args[arg].toSource();
-                    }
-                    // arrays
-                    else if (args[arg].constructor.toString().match(/array/i)) {
-                        msg += "[ " + args[arg].join() + " ] ";
-                    }
-                    else {
-                        var tmp = [];
-                        for (var p in args[arg]) {
-                            tmp.push(" '" + p + "' : '" + args[arg][p] + "'");
-                        }
-                        if (tmp.length) {
-                            msg += "{ " + tmp.join() + " } ";
-                        }
-                        else {
-                            msg += "[ " + typeof args[arg] + " ] ";
-                        }
-                    }
-                }
-            }
-            return "<code>" + msg + "</code> ";
-        }
-        
-        function printDOM(DOM, space) {
-            var msg = "";
-            if (!DOM.nodeType) {
-                return;
-            }
-            switch (DOM.nodeType) {
-            case 1:// element
-                msg += space + "&lt;" + DOM.nodeName;
-                if (DOM.hasAttributes && DOM.hasAttributes()) {
-                    if (DOM.getAttribute('id')) {
-                        msg += ' id="' + DOM.getAttribute('id') + '"';
-                    }
-                    if (DOM.getAttribute('class')) {
-                        msg += ' class="' + DOM.getAttribute('class') + '"';
-                    }
-                    if (DOM.getAttribute('title')) {
-                        msg += ' title="' + DOM.getAttribute('title') + '"';
-                    }
-                }
-                msg += "&gt;<br/>";
-                for (var n = 0; n < DOM.childNodes.length; n += 1) {
-                    msg += printDOM(DOM.childNodes[n], space + "&nbsp;&nbsp;&nbsp;&nbsp;");
-                }
-                msg += space + "&lt;/" + DOM.nodeName + "&gt;<br/>";
-                break;
-            case 2:// attribute
-                // already taken care of (@id and @class only)
-                break;
-            case 3:// text
-                if (/\S/.test(DOM.nodeValue)) {
-                    msg += space + DOM.nodeValue + "<br/>";
-                }
-                break;
-            case 4:// cdata section
-                msg += space + "&lt;![CDATA[" + DOM.data + "]]&gt;<br/>";
-                break;
-            case 7:// processing instruction
-                msg += space + "&lt;?" + DOM.target + DOM.data + "?&gt;<br/>";
-                break;
-            case 8:// comment
-                msg += space + "&lt;!--" + DOM.data + "--&gt;<br/>";
-                break;
-            }
-            return "<code>" + msg + "</code>";
-        }
-        
-        function printObject(obj) {
-            var msg = "";
-            for (var p in obj) {
-                msg += "<dt><code>" + p + "</code></dt><dd><code>" + obj[p] + "</code></dd>";
-            }
-            return "<dl>" + msg + "</dl>";
-        }
-        
-        function stackTrace(nextCaller) {
-            var msg = "";
-            while (nextCaller) {
-                msg += "<li><code>" + getFunctionName(nextCaller) + "(" + nextCaller.arguments.join() + ")" + "</code></li>";
-                nextCaller = nextCaller.caller;
-            }
-            return "Stack Trace:<ol>" + msg + "</ol>";
-        }
-
-        // foreach Firebug method, create our own function for printing useful data
-        // if debugging is disabled, create an empty function to avoid null function references
-        for (var method in methods) {
-            if (!window.console[methods[method]]) {
-                if (DEBUG) {
-                    window.console[methods[method]] = function (method) {
-                        return (function () {
-                            var msg = "";
-                            switch (method) {
-                            case "log":
+    // if there's no window console or firebug console, import Firebug Lite
+    if (!console.firebug && DEBUG) {
+        $(document).ready(function(){
+            var firebug = document.createElement('script');
+            firebug.setAttribute('src', 'http://getfirebug.com/releases/lite/1.2/firebug-lite-compressed.js');
+            document.body.appendChild(firebug);
+            (function(){
+                if (window.pi && window.firebug) {
+                    // Firebug Lite has been imported
+                    window.firebug.init();
+	                // add watchXHR support
+                    var _ajax = $.ajax;
+                    $.ajax = function (_ajax) {
+                        return (function (options){
+                            var xhr = _ajax(options);
+                            if (options && options.watch) {
+                                window.firebug.watchXHR(xhr);
+                            }
+                            return xhr;
+                        });
+                    }(_ajax);
+                    // re-map console commands to Firebug Lite commands
+                    var groupStack = [];
+                    var timerStack = [];
+                    for (var method in methods) {
+                        switch (methods[method]) {
+                            // map debug,info,warn,error to log()
                             case "debug":
                             case "info":
                             case "warn":
                             case "error":
-                            case "assert":
-                                msg = printArguments(arguments);
-                                $('<li class="' + method + '">' + msg + '</li>').appendTo('#' + debugIdStack[debugIdStack.length - 1]);
+                                console[methods[method]] = console.log;
                                 break;
-                            case "dir":
-                                msg = printObject(arguments[0]);
-                                $('<li class="' + method + '">' + msg + '</li>').appendTo('#' + debugIdStack[debugIdStack.length - 1]);
-                                break;
+                            // map dirxml to dir()
                             case "dirxml":
-                                msg = printDOM(arguments[0]);
-                                $('<li class="' + method + '">' + msg + '</li>').appendTo('#' + debugIdStack[debugIdStack.length - 1]);
+                                console.dirxml = console.dir;
                                 break;
-                            case "trace":
-                                msg = stackTrace(arguments.callee);
-                                $('<li class="' + method + '">' + msg + '</li>').appendTo('#' + debugIdStack[debugIdStack.length - 1]);
-                                break;
+                            // use log() to form a sort of group
                             case "group":
-                                msg = printArguments(arguments);
-                                var li = $('<li class="' + method + '">' + msg + '</li>').appendTo('#' + debugIdStack[debugIdStack.length - 1]);
-                                debugIdStack.push("dbg" + (new Date()).getTime());
-                                $(li).append('<ol id="' + debugIdStack[debugIdStack.length - 1] + '"></ol>');
+                                console.group = function(){
+                                    // replace the jQuery object as first argument because its useless when printed in FirebugLite
+                                    arguments[0] = "Group Start: ";
+                                    groupStack.push(arguments);
+                                    console.log.apply(console, arguments);
+                                };
                                 break;
+                            // use log() to form a sort of group
                             case "groupEnd":
-                                debugIdStack.pop();
+                                console.groupEnd = function(){
+                                    var args = groupStack.pop()
+                                    args[0] = "Group End: ";
+                                    console.log.apply(console, args);
+                                };
                                 break;
+                            // start a timer
                             case "time":
-                                timerStack[arguments[0]] = [];
-                                timerStack[arguments[0]].push((new Date()).getTime());
+                                console.time = function(){
+                                    timerStack[arguments[0]] = [];
+                                    timerStack[arguments[0]].push((new Date()).getTime());
+                                };
                                 break;
+                            // use log() to display timer results
                             case "timeEnd":
-                                var sec = ((new Date()).getTime() - timerStack[arguments[0]].pop()) / 1000;
-                                $('<li class="' + method + '">Timer "' + arguments[0] + '": ' + sec + ' seconds.</li>').appendTo('#' + debugIdStack[debugIdStack.length - 1]);
+                                console.timeEnd = function(){
+                                    if (!timerStack[arguments[0]]) {
+                                        return console.error("Timer '" + arguments[0] + "' has not been started.");
+                                    }
+                                    var sec = ((new Date()).getTime() - timerStack[arguments[0]].pop()) / 1000;
+                                    console.log("Timer '" + arguments[0] + "': " + sec + " seconds.");
+                                };
                                 break;
+                            // use log() for assert
+                            case "assert":
+                                console.assert = function(){
+                                    // drop the 'false' argument
+                                    var args = $.makeArray(arguments);
+                                    args.shift();
+                                    console.log.apply(console, args);
+                                };
+                                break;
+                            // count,trace,profile,profileEnd are unsupported
+                            case "count":
+                            case "trace":
                             case "profile":
                             case "profileEnd":
-                            case "count":
+                                console[methods[method]] = function(method){
+                                    return function(){
+                                        console.log("Firebug Lite does not support method: " + method);
+                                    };
+                                }(methods[method]);
                                 break;
+                            // log,dir built-in with Firebug Lite
+                            case "log":
+                            case "dir":
                             default:
                                 break;
-                            }
-                        });
-                    }(methods[method]);
+                        }
+                    }
                 }
                 else {
-                    window.console[methods[method]] = function () {};
+                    setTimeout(arguments.callee);
                 }
-            }
-        }
-    }
-
-    // if there's no window console or firebug console, create our own
-    if (!window.console || !console.firebug) {
-        if (!window.console) {
-            window.console = {};
-        }
-        if (DEBUG) {
-            firebug();
-            // dynamically include Firebug Lite if possible, will override our custom functions
-            $("head").append('<script type="text/javascript" src="firebuglite/firebug.js"></script>');
-            $("#DEBUG").remove();
-        }
+            })();
+            void (firebug);
+        });
     }
 
     // foreach Firebug method, create an associated jQuery function
     for (var method in methods) {
+        // set a blank function foreach console method to avoid 'function undefined' errors
+        if (!window.console[methods[method]]) {
+            window.console[methods[method]] = function(){};
+        }
         if (methods.hasOwnProperty(method)) {
             switch (methods[method]) {
             case "log":
@@ -256,7 +146,20 @@ if (window.DEBUG === undefined) {
             case "dirxml":
                 $.fn[methods[method]] = function (method) {
                     return (function () {
-                        console.group.apply(console, arguments);
+                        var self = this;
+                        // add jQuery object as arg0
+                        var args = [this].concat($.makeArray(arguments));
+                        // parse out jQuery '.method' commands to call on jQuery object
+                        $.each(args,function(key, value){
+                            if (value.match && (found = value.match(/^\.(.)*/))) {
+                                var method = found[0].substr(1);
+                                if ($(self)[method]) {
+                                    args[key] = $(self)[method].apply($(self));
+                                }
+                            }
+                        });
+                        // group this jQuery object, calling the method on each item
+                        console.group.apply(console, args);
                         this.each(function (i) {
                             console[method](this);
                         });
@@ -265,32 +168,17 @@ if (window.DEBUG === undefined) {
                     });
                 }(methods[method]);
                 break;
-            case "count":
-            case "trace":
-            case "group":
-            case "groupEnd":
-            case "time":
-            case "timeEnd":
-            case "profile":
-            case "profileEnd":
-                $.fn[methods[method]] = function (method) {
-                    return (function () {
-                        console[method].apply(console, arguments);
-                        return this;
-                    });
-                }(methods[method]);
-                break;
             case "assert":
+                // group the jQuery object and call assert on each item
                 $.fn[methods[method]] = function (method) {
                     return (function () {
-                        var expr = arguments[0];
-                        if (!expr) {
-                            var args = $.makeArray(arguments);
-                            args.shift();
-                            args.unshift("Assertion Failed: ");
+                        if (!arguments[0]) {
+                            // add jQuery object as arg0 and replace 'expression' with a description
+                            var args = [this].concat($.makeArray(arguments));
+                            args[1] = "Assertion Failed: ";
                             console.group.apply(console, args);
                             this.each(function (i) {
-                                console.assert(expr, this);
+                                console.assert(false, this);
                             });
                             console.groupEnd();
                         }
@@ -298,7 +186,30 @@ if (window.DEBUG === undefined) {
                     });
                 }(methods[method]);
                 break;
+            case "group":
+            case "groupEnd":
+                // apply these commands directly (add jQuery object as arg0), return the jQuery object
+                $.fn[methods[method]] = function (method) {
+                    return (function () {
+                        console[method].apply(console, [this].concat($.makeArray(arguments)));
+                        return this;
+                    });
+                }(methods[method]);
+                break;
+            case "count":
+            case "trace":
+            case "time":
+            case "timeEnd":
+            case "profile":
+            case "profileEnd":
             default:
+                // apply these commands directly, returning the jQuery object
+                $.fn[methods[method]] = function (method) {
+                    return (function () {
+                        console[method].apply(console, arguments);
+                        return this;
+                    });
+                }(methods[method]);
                 break;
             }
         }

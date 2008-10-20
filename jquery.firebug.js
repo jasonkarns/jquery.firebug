@@ -5,6 +5,7 @@
  * TODO: integrate firebug.watchXHR better
  */
 /*** this block must never be used in an embedded script ***/
+// Degrading Script Tags : http://ejohn.org/blog/degrading-script-tags/
 // determine DEBUG setting from this script tag
 eval(document.getElementsByTagName("script")[document.getElementsByTagName("script").length-1].innerHTML);
 if (window.DEBUG === undefined) {
@@ -125,7 +126,7 @@ if (window.DEBUG === undefined) {
                     setTimeout(arguments.callee);
                 }
             })();
-            void (firebug);
+//            void (firebug);
         });
     }
 
@@ -148,18 +149,21 @@ if (window.DEBUG === undefined) {
                     return (function () {
                         var self = this;
                         // add jQuery object as arg0
-                        var args = [this].concat($.makeArray(arguments));
+//                        var args = [this].concat($.makeArray(arguments));
                         // parse out jQuery '.method' commands to call on jQuery object
-                        $.each(args,function(key, value){
-                            if (value.match && (found = value.match(/^\.(.)*/))) {
-                                var method = found[0].substr(1);
-                                if ($(self)[method]) {
-                                    args[key] = $(self)[method].apply($(self));
-                                }
-                            }
-                        });
+//                        $.each(args,function(key, value){
+//                            if (value.match && (found = value.match(/^\.(.)*/))) {
+//                                var method = found[0].substr(1);
+//                                if ($(self)[method]) {
+//                                    args[key] = $(self)[method].apply($(self));
+//                                }
+//                            }
+//                        });
+                        if (arguments.length) {
+                            console[method].apply(console, arguments);
+                        }
                         // group this jQuery object, calling the method on each item
-                        console.group.apply(console, args);
+                        console.group(this);
                         this.each(function (i) {
                             console[method](this);
                         });

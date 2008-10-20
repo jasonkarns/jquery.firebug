@@ -36,18 +36,16 @@ $doc->head();
 <?=$_naked?>
 <h2>jQuery.Firebug</h2>
 
-<p>So with each passing day, it seems I am in even greater need of a blog. Oh well.</p>
-
 <p>Announcing jQuery.Firebug! This is a jQuery plugin to add the Firebug console methods to the jQuery object. 
-The current API supports the entire <a href="http://getfirebug.com/console.html">Firebug 1.0 console API</a>, 
+The current API supports the entire <a href="http://getfirebug.com/console.html">Firebug 1.2 console API</a>, 
 which consists of <samp>log</samp>, <samp>debug</samp>, <samp>info</samp>, <samp>warn</samp>, <samp>error</samp>, 
 <samp>assert</samp>, <samp>dir</samp>, <samp>dirxml</samp>, <samp>trace</samp>, <samp>group</samp>, <samp>groupEnd</samp>, 
 <samp>time</samp>, <samp>timeEnd</samp>, <samp>profile</samp>, <samp>profileEnd</samp>, and <samp>count</samp>. 
-In addition, all methods are fully chaineable and will return the jQuery object (unmodified) on which they were invoked.</p>
+In addition, all methods are fully chainable and will return the jQuery object (unmodified) on which they were invoked.</p>
 
 <p>Usage of the API should be intuitive for those who have used Firebug's console API before, with one rather significant wrinkle. 
 Whereas logging to the console was normally accomplished using <samp>console.log(parameters)</samp>, 
-the jQuery methods will get their 'parameters' not only from the method parameters themselves, 
+the jQuery methods will get their 'parameters' not only from the methods' parameters themselves, 
 but also from the jQuery object itself. (more on this later)
 I believe this is desired functionality, as the itch I intended to scratch always involved inspecting the 
 jQuery object itself at some point(s) in a call chain.

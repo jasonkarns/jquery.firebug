@@ -1,0 +1,67 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+		<title>Untitled Document</title>
+	</head>
+	<body>
+	    <dl>
+	        <dt id="log">log(object[, object, ...])</dt>
+            <dt id="debug">debug(object[, object, ...])</dt>
+            <dt id="info">info(object[, object, ...])</dt>
+            <dt id="warn">warn(object[, object, ...])</dt>
+            <dt id="error">error(object[, object, ...])</dt>
+            <dt id="dir">dir(object[, object, ...])</dt>
+            <dt id="dirxml">dirxml(object[, object, ...])</dt>
+            <dd>
+                <p>All of the above console methods function nearly the same as their Firebug counterparts, but with one significant difference. If the method is called with any arguments, the Firebug counterpart method is called with the same arguments. (If called without arguments, this call is skipped). Then <samp>console.group()</samp> is called with the jQuery object as a parameter. Then the original method is invoked on each of the matched elements, and the grouping is closed.</p>
+                <dl>
+                    <dt>Example 1</dt>
+                    <dd>
+                        <p>
+                            <code class="javascript jquery.firebug"><pre>$(selector).log("jQuery is awesome!"); // this is equivalent to the following code:</pre></code>
+                            <code class="javascript console.firebug"><pre>
+console.log("jQuery is awesome!");
+console.group($(selector));
+$(selector).each(function(){
+    console.log(this);
+});
+console.groupEnd();
+</pre></code></p>
+                    </dd>
+                    <dt>Example 2</dt>
+                    <dd>
+                        <p>
+                            <code class="javascript jquery.firebug"><pre>$(selector).log(); // this is equivalent to the following code:</pre></code>
+                            <code class="javascript console.firebug"><pre>
+console.group($(selector));
+$(selector).each(function(){
+    console.log(this);
+});
+console.groupEnd();
+</pre></code></p>
+                    </dd>
+                </dl>
+            </dd>
+            <dt>assert</dt>
+            <dd></dd>
+            <dt>trace</dt>
+            <dd></dd>
+            <dt>group</dt>
+            <dd></dd>
+            <dt>groupEnd</dt>
+            <dd></dd>
+            <dt>time</dt>
+            <dd></dd>
+            <dt>timeEnd</dt>
+            <dd></dd>
+            <dt>profile</dt>
+            <dd></dd>
+            <dt>profileEnd</dt>
+            <dd></dd>
+            <dt>count</dt>
+            <dd></dd>
+	    </dl>
+        
+	</body>
+</html>

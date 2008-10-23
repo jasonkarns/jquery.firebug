@@ -190,20 +190,21 @@ if (window.DEBUG === undefined) {
                     });
                 }(methods[method]);
                 break;
+            case "time":
+            case "timeEnd":
             case "group":
             case "groupEnd":
                 // apply these commands directly (add jQuery object as arg0), return the jQuery object
                 $.fn[methods[method]] = function (method) {
                     return (function () {
-                        console[method].apply(console, [this].concat($.makeArray(arguments)));
+                        var args = (arguments.length? arguments : [this]);
+                        console[method].apply(console, args);
                         return this;
                     });
                 }(methods[method]);
                 break;
             case "count":
             case "trace":
-            case "time":
-            case "timeEnd":
             case "profile":
             case "profileEnd":
             default:
@@ -211,6 +212,7 @@ if (window.DEBUG === undefined) {
                 $.fn[methods[method]] = function (method) {
                     return (function () {
                         console[method].apply(console, arguments);
+//                        console[method].apply(console, [this].concat($.makeArray(arguments)));
                         return this;
                     });
                 }(methods[method]);

@@ -26,8 +26,8 @@ console.group($(selector));
 $(selector).each(function(){
     console.log(this);
 });
-console.groupEnd();
-</pre></code></p>
+console.groupEnd();</pre></code>
+                        </p>
                     </dd>
                     <dt>Example 2</dt>
                     <dd>
@@ -38,30 +38,42 @@ console.group($(selector));
 $(selector).each(function(){
     console.log(this);
 });
-console.groupEnd();
-</pre></code></p>
+console.groupEnd();</pre></code>
+                        </p>
                     </dd>
                 </dl>
             </dd>
             <dt>assert</dt>
-            <dd></dd>
+            <dd>TODO</dd>
             <dt>trace</dt>
-            <dd></dd>
+            <dd>TODO</dd>
             <dt>group</dt>
-            <dd></dd>
-            <dt>groupEnd</dt>
-            <dd></dd>
+            <dd>
+                <p>Once again, this method functions nearly identical to its Firebug counterpart. Calling this method with arguments will print those arguments and begin a nested block for future statements (closed with <samp>groupEnd</samp>). However, calling this method without arguments will output the jQuery object before opening the block.</p>
+                <dl>
+                    <dt>Example 1</dt>
+                    <dd>
+                        <p>
+                            <code class="javascript jquery.firebug"><pre>$(selector).group(); // this is equivalent to the following code:</pre></code>
+                            <code class="javascript console.firebug"><pre>console.group($(selector));</pre></code>
+                        </p>
+                    </dd>
+                </dl>
+            </dd>
             <dt>time</dt>
-            <dd></dd>
             <dt>timeEnd</dt>
-            <dd></dd>
+            <dd>
+                <p>Similar to the <samp>group</samp> method, these methods function nearly identical to their Firebug counterpart. Calling <samp>time</samp> with arguments will begin a named timer. Calling <samp>timeEnd</samp> will print the time elapsed. Timers are named therefore multiple timers may be running simultaneously and they need not be ended in FIFO order. The only minor different with the Firebug method is that if called without arguments, the jQuery object is used as the timer name.</p>
+            </dd>
             <dt>profile</dt>
-            <dd></dd>
+            <dd>TODO</dd>
             <dt>profileEnd</dt>
-            <dd></dd>
+            <dd>TODO</dd>
             <dt>count</dt>
-            <dd></dd>
+            <dt>groupEnd</dt>
+            <dd>
+                <p>These methods are identical to their Firebug counterparts.</p>
+            </dd>
 	    </dl>
-        
 	</body>
 </html>

@@ -18,7 +18,7 @@ jQuery(document).ready(function(){
     var test = {
         vars: {
             nil: null,
-            arr1: new Array(),
+            arr1: new Array("one","two"),
             arr2: ["key", "value"],
             arr3: [],
             str1: "string",
@@ -36,7 +36,8 @@ jQuery(document).ready(function(){
             bool1: true,
             bool2: new Boolean(),
             date1: new Date(),
-            func1: function tempFunc(){
+            func1: function tempFunc(sel, arg){
+                $(sel).trace(arg);
             }
         },
         invoke: function(selector, method, arg) {
@@ -73,13 +74,27 @@ jQuery(document).ready(function(){
             $("#tree").count("count");
         }
     }
-    test.vars.arr1.push("one");
-    test.vars.arr1.push("two");
     
     $("#run").click(function(){
 //        console.log($("#selector").val(), $("#method").val(), $("#arg").val());
         test.invoke($("#selector").val(), $("#method").val(), $("#arg").val());
     });
+    
+    $("#btn").click(function(){
+//        test.vars.func1($("#selector").val(), test.vars[$("#arg").val()]);
+        console.assert(4 == 5);
+    });
+    
+    $("#selector, #method, #arg").change(function(){
+        if(this.id == "arg"){
+            var attr = $("option:selected",this).attr("title");
+            var text = $("option:selected",this).text();
+            $("#src-"+ this.id).text(attr?attr:text);
+        }
+        else {
+            $("#src-"+ this.id).text($(this).val());
+        }
+    }).change();
 
 //    $("#trace").click(test.trace);
 //    $("#group").click(test.group);
@@ -105,6 +120,17 @@ jQuery(document).ready(function(){
     </div>
 </div>
 <h3>Tests</h3>
+<p id="source">
+    <code>$("</code>
+    <strong><code id="src-selector"></code></strong>
+    <code>").</code>
+    <code id="src-method"></code>
+    <code>(</code>
+    <em><code id="src-arg"></code></em>
+    <code>);</code>
+</p>
+<form action="">
+<fieldset>
 <label for="selector">Selector</label>
 <input type="text" id="selector" value="h2" />
 <label for="method">Method</label>
@@ -114,7 +140,7 @@ jQuery(document).ready(function(){
     <option>info</option>
     <option>warn</option>
     <option>error</option>
-    <option>asser</option>
+    <option>assert</option>
     <option>dir</option>
     <option>dirxml</option>
     <option>trace</option>
@@ -129,7 +155,7 @@ jQuery(document).ready(function(){
 <label for="arg">Argument(s)</label>
 <select id="arg">
     <option value="nil">null</option>
-    <option value="arr1">new Array()</option>
+    <option value="arr1">new Array("one","two")</option>
     <option value="arr2">["key", "value"]</option>
     <option value="str1">"string"</option>
     <option value="str2">new String("new string")</option>
@@ -142,11 +168,16 @@ jQuery(document).ready(function(){
     <option value="date1">new Date()</option>
     <option value="func1">function tempFunc(){}</option>
     <optgroup label="Complex">
-    <option value="apply-arr3">No Arguments</option>
-    <option value="apply-fstr1">Formatted String</option>
+    <option value="apply-arr3" title=" ">No Arguments</option>
+    <option value="apply-fstr1" title='"String: %s; Integer D: %d, Integer I: %i; Float: %f; Object: %o", "string", 0, 7, 3.14159, {key:"value"}'>Formatted String</option>
     <option value="apply-mix1">Mixed</option>
     </optgroup>
 </select>
-<button id="run">Run Test</button>
+<button id="run" type="button">Run Test</button>
+</fieldset>
+<fieldset>
+<button id="btn" type="button">Button</button>
+</fieldset>
+</form>
 </body>
 </html>

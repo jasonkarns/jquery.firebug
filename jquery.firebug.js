@@ -1,60 +1,83 @@
-/*global jQuery, DEBUG */
+/*global jQuery, options */
 
 /*
  * TODO: support count, trace, profile, and profileEnd for Firebug Lite
  * TODO: integrate firebug.watchXHR better
+ * TODO: integrate clear(), inspect methods
+ * TODO: verify Firebug onLoad (why is Lite being imported?)
  */
 /*** this block must never be used in an embedded script ***/
 // Degrading Script Tags : http://ejohn.org/blog/degrading-script-tags/
-// determine DEBUG setting from this script tag
+// determine Firebug options from this script tag
 eval(document.getElementsByTagName("script")[document.getElementsByTagName("script").length-1].innerHTML);
-if (window.DEBUG === undefined) {
-    var DEBUG = true;
-}
 /***********************************************************/
-
-(function ($) {
-    var methods = ["assert",
-                "log", "debug", "info", "warn", "error", "dir", "dirxml",
-                "count", "trace", "group", "groupEnd", "time", "timeEnd", "profile", "profileEnd"];
+(function ($,options) {
+    $.firebug = {
+        defaults: {
+            debug: false,
+            lite: {state: "minimized" /* open, closed, minimized */, watchXHR: true},
+            methods: ["assert", "log", "debug", "info", "warn", "error", "dir", "dirxml", "count", "trace", "group", "groupEnd", "time", "timeEnd", "profile", "profileEnd", "clear", "close", "minimize", "maximize"]
+        }
+    };
+    var settings = $.extend({}, $.firebug.defaults, options);
 
     // create basic console object if it doesn't exist
     if (!window.console) {
         window.console = {};
     }
-
+    
+//*
     // if there's no window console or firebug console, import Firebug Lite
-    if (!window.console.firebug && DEBUG) {
+    if (!window.console.firebug && settings.debug) {
         $(document).ready(function(){
             var firebug = document.createElement('script');
-            firebug.setAttribute('src', 'http://getfirebug.com/releases/lite/1.2/firebug-lite-compressed.js');
+            firebug.setAttribute('src', 'firebuglite/firebug-lite-compressed.js');
             document.body.appendChild(firebug);
             (function(){
                 if (window.pi && window.firebug) {
                     // Firebug Lite has been imported
                     window.firebug.init();
-	                // add watchXHR support
+                    
+                    // Open to desired state
+                    switch (settings.lite.state) {
+                        case "closed":
+                            window.firebug.win.close();
+                            break;
+                        case "minimized":
+                            window.firebug.win.minimize();
+                            break;
+                        case "open":
+                        case "maximized":
+                        default:
+                            window.firebug.win.maximize();
+                            break;
+                    }
+                    
+                    // add watchXHR support
                     var _ajax = $.ajax;
-                    $.ajax = function (_ajax) {
-                        return (function (options){
+                    $.ajaxSetup({watch:settings.lite.watchXHR});
+                    $.ajax = function(_ajax){
+                        return (function(options){
                             var xhr = _ajax(options);
-                            if (options && options.watch) {
+                            var opts = $.extend({}, $.ajaxSettings, options);
+                            if (opts && opts.watch) {
                                 window.firebug.watchXHR(xhr);
                             }
                             return xhr;
                         });
                     }(_ajax);
+                    
                     // re-map console commands to Firebug Lite commands
                     var groupStack = [];
                     var timerStack = [];
-                    for (var method in methods) {
-                        switch (methods[method]) {
+                    for (var method in settings.methods) {
+                        switch (settings.methods[method]) {
                             // map debug,info,warn,error to log()
                             case "debug":
                             case "info":
                             case "warn":
                             case "error":
-                                window.console[methods[method]] = window.console.log;
+                                window.console[settings.methods[method]] = window.console.log;
                                 break;
                             // map dirxml to dir()
                             case "dirxml":
@@ -108,12 +131,20 @@ if (window.DEBUG === undefined) {
                             case "trace":
                             case "profile":
                             case "profileEnd":
-                                window.console[methods[method]] = function(method){
+                                window.console[settings.methods[method]] = function(method){
                                     return function(){
                                         window.console.log("Firebug Lite does not support method: " + method);
                                     };
-                                }(methods[method]);
+                                }(settings.methods[method]);
                                 break;
+                            case "close":
+                            case "minimize":
+                            case "maximize":
+                                window.console[settings.methods[method]] = window.firebug.win[settings.methods[method]];
+                                break;
+//                            case "clear":
+//                                window.console[settings.methods[method]] = window.firebug.d.clean[settings.methods[method]];
+//                                break;
                             // log,dir built-in with Firebug Lite
                             case "log":
                             case "dir":
@@ -130,21 +161,21 @@ if (window.DEBUG === undefined) {
 //            void (firebug);
         });
     }
-
+//*/
     // foreach Firebug method, create an associated jQuery function
-    for (var method in methods) {
+    for (var method in settings.methods) {
         // set a blank function foreach console method to avoid 'function undefined' errors
-        if (!window.console[methods[method]]) {
-            window.console[methods[method]] = function(){};
+        if (!window.console[settings.methods[method]]) {
+            window.console[settings.methods[method]] = function(){};
         }
-        if (methods.hasOwnProperty(method)) {
-            switch (methods[method]) {
+        if (settings.methods.hasOwnProperty(method)) {
+            switch (settings.methods[method]) {
             case "log":
             case "debug":
             case "info":
             case "warn":
             case "error":
-                $.fn[methods[method]] = function (method) {
+                $.fn[settings.methods[method]] = function (method) {
                     return (function () {
                         var self = this;
                         var args = arguments;
@@ -153,109 +184,112 @@ if (window.DEBUG === undefined) {
                             var found = false;
                             if (value && value.match && (found = value.match(/^\.(([a-zA-Z]+[a-zA-Z0-9_\-]*)\(.*\))$/))) {
                                 if ($(self)[found[2]]) {
-                                    with ($(self)) {
-                                        args[key] = eval(found[1]);
-                                    }
+//                                    with ($(self)) {
+//                                        args[key] = eval(found[1]);
+//                                    }
                                 }
                             }
                         });
                         if (arguments.length) {
-                            console[method].apply(console, arguments);
+                            window.console[method].apply(window.console, arguments);
                         }
                         // group this jQuery object, calling the method on each item
-                        console.group(this);
+                        window.console.group(this);
                         this.each(function (i) {
-                            console[method](this);
+                            window.console[method](this);
                         });
-                        console.groupEnd();
+                        window.console.groupEnd();
                         return this;
                     });
-                }(methods[method]);
+                }(settings.methods[method]);
                 break;
             case "dir":
             case "dirxml":
-                $.fn[methods[method]] = function (method) {
+                $.fn[settings.methods[method]] = function (method) {
                     return (function () {
                         var self = this;
                         if (arguments.length) {
-                            console[method].apply(console, arguments);
+                            window.console[method].apply(window.console, arguments);
                         }
                         // group this jQuery object, calling the method on each item
-                        console.group(this);
+                        window.console.group(this);
                         this.each(function (i) {
-                            console.group(this);
-                            console[method](this);
-                            console.groupEnd();
+                            window.console.group(this);
+                            window.console[method](this);
+                            window.console.groupEnd();
                         });
-                        console.groupEnd();
+                        window.console.groupEnd();
                         return this;
                     });
-                }(methods[method]);
+                }(settings.methods[method]);
                 break;
             case "assert":
                 // group the jQuery object and call assert on each item
-                $.fn[methods[method]] = function (method) {
+                $.fn[settings.methods[method]] = function (method) {
                     return (function () {
                         if (arguments.length) {
-                            console[method].apply(console, arguments);
+                            window.console[method].apply(window.console, arguments);
                         }
-                        console.group(this);
+                        window.console.group(this);
                         this.each(function (i) {
-                            console[method](false, this);
+                            window.console[method](false, this);
                         });
-                        console.groupEnd();
+                        window.console.groupEnd();
                         return this;
                     });
-                }(methods[method]);
+                }(settings.methods[method]);
                 break;
             case "time":
             case "timeEnd":
             case "group":
             case "groupEnd":
                 // apply these commands directly (add jQuery object as arg0), return the jQuery object
-                $.fn[methods[method]] = function (method) {
+                $.fn[settings.methods[method]] = function (method) {
                     return (function () {
                         var args = (arguments.length? arguments : [this]);
-                        console[method].apply(console, args);
+                        window.console[method].apply(window.console, args);
                         return this;
                     });
-                }(methods[method]);
+                }(settings.methods[method]);
                 break;
             case "trace":
                 // apply these commands directly, returning the jQuery object
-                $.fn[methods[method]] = function (method) {
+                $.fn[settings.methods[method]] = function (method) {
                     return (function () {
-                        console.group("Trace: ", this);
-                        console[method].apply(console, arguments);
-                        console.groupEnd();
+                        window.console.group("Trace: ", this);
+                        window.console[method].apply(window.console, arguments);
+                        window.console.groupEnd();
                         return this;
                     });
-                }(methods[method]);
+                }(settings.methods[method]);
                 break;
             case "profile":
                 // apply these commands directly, returning the jQuery object
-                $.fn[methods[method]] = function (method) {
+                $.fn[settings.methods[method]] = function (method) {
                     return (function () {
-                        console.debug(this);
-                        console[method].apply(console, arguments);
+                        window.console.debug(this);
+                        window.console[method].apply(window.console, arguments);
                         return this;
                     });
-                }(methods[method]);
+                }(settings.methods[method]);
                 break;
             case "count":
-            case "profile":
             case "profileEnd":
+            // Firebug Utility Methods
+            case "clear":
+            case "close":
+            case "minimize":
+            case "maximize":
             default:
                 // apply these commands directly, returning the jQuery object
-                $.fn[methods[method]] = function (method) {
+                $.fn[settings.methods[method]] = function (method) {
                     return (function () {
-                        console[method].apply(console, arguments);
-//                        console[method].apply(console, [this].concat($.makeArray(arguments)));
+                        window.console[method].apply(window.console, arguments);
                         return this;
                     });
-                }(methods[method]);
+                }(settings.methods[method]);
                 break;
             }
         }
     }
-})(jQuery);
+})(jQuery, options);

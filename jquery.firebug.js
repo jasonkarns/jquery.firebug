@@ -24,7 +24,7 @@ if (window.DEBUG === undefined) {
     }
 
     // if there's no window console or firebug console, import Firebug Lite
-    if (!console.firebug && DEBUG) {
+    if (!window.console.firebug && DEBUG) {
         $(document).ready(function(){
             var firebug = document.createElement('script');
             firebug.setAttribute('src', 'http://getfirebug.com/releases/lite/1.2/firebug-lite-compressed.js');
@@ -54,53 +54,53 @@ if (window.DEBUG === undefined) {
                             case "info":
                             case "warn":
                             case "error":
-                                console[methods[method]] = console.log;
+                                window.console[methods[method]] = window.console.log;
                                 break;
                             // map dirxml to dir()
                             case "dirxml":
-                                console.dirxml = console.dir;
+                                window.console.dirxml = window.console.dir;
                                 break;
                             // use log() to form a sort of group
                             case "group":
-                                console.group = function(){
+                                window.console.group = function(){
                                     // replace the jQuery object as first argument because its useless when printed in FirebugLite
                                     arguments[0] = "Group Start: ";
                                     groupStack.push(arguments);
-                                    console.log.apply(console, arguments);
+                                    window.console.log.apply(window.console, arguments);
                                 };
                                 break;
                             // use log() to form a sort of group
                             case "groupEnd":
-                                console.groupEnd = function(){
+                                window.console.groupEnd = function(){
                                     var args = groupStack.pop();
                                     args[0] = "Group End: ";
-                                    console.log.apply(console, args);
+                                    window.console.log.apply(window.console, args);
                                 };
                                 break;
                             // start a timer
                             case "time":
-                                console.time = function(){
+                                window.console.time = function(){
                                     timerStack[arguments[0]] = [];
                                     timerStack[arguments[0]].push((new Date()).getTime());
                                 };
                                 break;
                             // use log() to display timer results
                             case "timeEnd":
-                                console.timeEnd = function(){
+                                window.console.timeEnd = function(){
                                     if (!timerStack[arguments[0]]) {
-                                        return console.error("Timer '" + arguments[0] + "' has not been started.");
+                                        return window.console.error("Timer '" + arguments[0] + "' has not been started.");
                                     }
                                     var sec = ((new Date()).getTime() - timerStack[arguments[0]].pop()) / 1000;
-                                    console.log("Timer '" + arguments[0] + "': " + sec + " seconds.");
+                                    window.console.log("Timer '" + arguments[0] + "': " + sec + " seconds.");
                                 };
                                 break;
                             // use log() for assert
                             case "assert":
-                                console.assert = function(){
+                                window.console.assert = function(){
                                     // drop the 'false' argument
                                     var args = $.makeArray(arguments);
                                     args.shift();
-                                    console.log.apply(console, args);
+                                    window.console.log.apply(window.console, args);
                                 };
                                 break;
                             // count,trace,profile,profileEnd are unsupported
@@ -108,9 +108,9 @@ if (window.DEBUG === undefined) {
                             case "trace":
                             case "profile":
                             case "profileEnd":
-                                console[methods[method]] = function(method){
+                                window.console[methods[method]] = function(method){
                                     return function(){
-                                        console.log("Firebug Lite does not support method: " + method);
+                                        window.console.log("Firebug Lite does not support method: " + method);
                                     };
                                 }(methods[method]);
                                 break;
@@ -150,6 +150,7 @@ if (window.DEBUG === undefined) {
                         var args = arguments;
                         // parse out jQuery '.method' commands to call on jQuery object
                         $.each(args,function(key, value){
+                            var found = false;
                             if (value && value.match && (found = value.match(/^\.(([a-zA-Z]+[a-zA-Z0-9_\-]*)\(.*\))$/))) {
                                 if ($(self)[found[2]]) {
                                     with ($(self)) {

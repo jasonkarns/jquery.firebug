@@ -72,7 +72,7 @@ if (window.DEBUG === undefined) {
                             // use log() to form a sort of group
                             case "groupEnd":
                                 console.groupEnd = function(){
-                                    var args = groupStack.pop()
+                                    var args = groupStack.pop();
                                     args[0] = "Group End: ";
                                     console.log.apply(console, args);
                                 };
@@ -117,6 +117,7 @@ if (window.DEBUG === undefined) {
                             // log,dir built-in with Firebug Lite
                             case "log":
                             case "dir":
+                                break;
                             default:
                                 break;
                         }
@@ -143,22 +144,20 @@ if (window.DEBUG === undefined) {
             case "info":
             case "warn":
             case "error":
-            case "dir":
-            case "dirxml":
                 $.fn[methods[method]] = function (method) {
                     return (function () {
                         var self = this;
-                        // add jQuery object as arg0
-//                        var args = [this].concat($.makeArray(arguments));
+                        var args = arguments;
                         // parse out jQuery '.method' commands to call on jQuery object
-//                        $.each(args,function(key, value){
-//                            if (value.match && (found = value.match(/^\.(.)*/))) {
-//                                var method = found[0].substr(1);
-//                                if ($(self)[method]) {
-//                                    args[key] = $(self)[method].apply($(self));
-//                                }
-//                            }
-//                        });
+                        $.each(args,function(key, value){
+                            if (value && value.match && (found = value.match(/^\.(([a-zA-Z]+[a-zA-Z0-9_\-]*)\(.*\))$/))) {
+                                if ($(self)[found[2]]) {
+                                    with ($(self)) {
+                                        args[key] = eval(found[1]);
+                                    }
+                                }
+                            }
+                        });
                         if (arguments.length) {
                             console[method].apply(console, arguments);
                         }
@@ -172,20 +171,38 @@ if (window.DEBUG === undefined) {
                     });
                 }(methods[method]);
                 break;
+            case "dir":
+            case "dirxml":
+                $.fn[methods[method]] = function (method) {
+                    return (function () {
+                        var self = this;
+                        if (arguments.length) {
+                            console[method].apply(console, arguments);
+                        }
+                        // group this jQuery object, calling the method on each item
+                        console.group(this);
+                        this.each(function (i) {
+                            console.group(this);
+                            console[method](this);
+                            console.groupEnd();
+                        });
+                        console.groupEnd();
+                        return this;
+                    });
+                }(methods[method]);
+                break;
             case "assert":
                 // group the jQuery object and call assert on each item
                 $.fn[methods[method]] = function (method) {
                     return (function () {
-                        if (!arguments[0]) {
-                            // add jQuery object as arg0 and replace 'expression' with a description
-                            var args = [this].concat($.makeArray(arguments));
-                            args[1] = "Assertion Failed: ";
-                            console.group.apply(console, args);
-                            this.each(function (i) {
-                                console.assert(false, this);
-                            });
-                            console.groupEnd();
+                        if (arguments.length) {
+                            console[method].apply(console, arguments);
                         }
+                        console.group(this);
+                        this.each(function (i) {
+                            console[method](false, this);
+                        });
+                        console.groupEnd();
                         return this;
                     });
                 }(methods[method]);
@@ -203,8 +220,28 @@ if (window.DEBUG === undefined) {
                     });
                 }(methods[method]);
                 break;
-            case "count":
             case "trace":
+                // apply these commands directly, returning the jQuery object
+                $.fn[methods[method]] = function (method) {
+                    return (function () {
+                        console.group("Trace: ", this);
+                        console[method].apply(console, arguments);
+                        console.groupEnd();
+                        return this;
+                    });
+                }(methods[method]);
+                break;
+            case "profile":
+                // apply these commands directly, returning the jQuery object
+                $.fn[methods[method]] = function (method) {
+                    return (function () {
+                        console.debug(this);
+                        console[method].apply(console, arguments);
+                        return this;
+                    });
+                }(methods[method]);
+                break;
+            case "count":
             case "profile":
             case "profileEnd":
             default:

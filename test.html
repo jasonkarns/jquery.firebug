@@ -1,6 +1,4 @@
-<?xml version="1.0" encoding="UTF-8" ?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
-         "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <title>jQuery.Firebug</title>
@@ -9,11 +7,14 @@
 <script type="text/javascript" src="jquery-1.2.3.js"></script>
 <!--
 <script type="text/javascript" src="firebuglite/firebug.js"></script>
-<script type="text/javascript" src="firebuglite/firebug.js"></script>
 <link rel="stylesheet" type="text/css" href="jquery.firebug.css" />
+
+<script type="text/javascript" src="firebug-lite-compressed.js"></script>
+<link type="text/css" rel="stylesheet" href="firebug-lite.css"/>
 -->
-<script type="text/javascript" src="jquery.firebug.js">DEBUG = true;</script>
+<script type="text/javascript" src="jquery.firebug.js">var options = {debug:true,minimize:true};</script>
 <script type="text/javascript">
+/*global jQuery */
 jQuery(document).ready(function(){
     var test = {
         vars: {
@@ -76,15 +77,17 @@ jQuery(document).ready(function(){
     }
     
     $("#run").click(function(){
-//        console.log($("#selector").val(), $("#method").val(), $("#arg").val());
         test.invoke($("#selector").val(), $("#method").val(), $("#arg").val());
     });
     
     $("#btn").click(function(){
-//        test.vars.func1($("#selector").val(), test.vars[$("#arg").val()]);
         console.assert(4 == 5);
     });
     
+    $("#ajax").click(function(){
+        $.get("file:///C:/Inetpub/wwwroot/firebug/api.html");
+    });
+
     $("#selector, #method, #arg").change(function(){
         if(this.id == "arg"){
             var attr = $("option:selected",this).attr("title");
@@ -151,6 +154,7 @@ jQuery(document).ready(function(){
     <option>profile</option>
     <option>profileEnd</option>
     <option>count</option>
+    <option>clear</option>
 </select>
 <label for="arg">Argument(s)</label>
 <select id="arg">
@@ -176,7 +180,8 @@ jQuery(document).ready(function(){
 <button id="run" type="button">Run Test</button>
 </fieldset>
 <fieldset>
-<button id="btn" type="button">Button</button>
+<button id="btn" type="button">Assert</button>
+<button id="ajax" type="button">Ajax</button>
 </fieldset>
 </form>
 </body>

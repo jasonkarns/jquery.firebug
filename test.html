@@ -4,15 +4,15 @@
 <title>jQuery.Firebug</title>
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <!-- this stylesheet only used by jquery.firebug.js not jquery.firebuglite.js -->
-<script type="text/javascript" src="jquery-1.2.3.js"></script>
+<script type="text/javascript" src="jquery-1.2.6.js"></script>
 <!--
 <script type="text/javascript" src="firebuglite/firebug.js"></script>
 <link rel="stylesheet" type="text/css" href="jquery.firebug.css" />
 
-<script type="text/javascript" src="firebug-lite-compressed.js"></script>
-<link type="text/css" rel="stylesheet" href="firebug-lite.css"/>
+<script type="text/javascript" src="firebuglite/firebug-lite-compressed.js"></script>
+<link type="text/css" rel="stylesheet" href="firebuglite/firebug-lite.css"/>
 -->
-<script type="text/javascript" src="jquery.firebug.js">{debug:true,minimize:true}</script>
+<script type="text/javascript" src="jquery.firebug.js">({debug:true,lite:{minimized:false}})</script>
 <script type="text/javascript">
 /*global jQuery */
 jQuery(document).ready(function(){
@@ -85,7 +85,7 @@ jQuery(document).ready(function(){
     });
     
     $("#ajax").click(function(){
-        $.get("file:///C:/Inetpub/wwwroot/firebug/api.html");
+        $.get("http://www.google.com");
     });
 
     $("#selector, #method, #arg").change(function(){

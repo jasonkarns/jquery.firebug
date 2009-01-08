@@ -1,5 +1,17 @@
 /*global jQuery */
 
+/* TODO:
+ * 
+ * test IE (diff versions) (with/without DebugBar etc.)
+ * test Safari (with console)
+ * test Opera (Dragonfly)
+ * test Firefox (with/without, enabled/disabled, suspended Firebug)
+ 
+ * handle firebug.inspect method
+ * better grouping in FbLite
+ * support FbLite firebug.d.console.cmd fallbacks
+ */
+
 (function ($) {
     /****************************************************************************/
     /***  Degrading Script Tags : http://ejohn.org/blog/degrading-script-tags ***/
@@ -46,18 +58,17 @@
 							}
                             
                             // add watchXHR support
-                            var ajax_super = $.ajax;
                             $.ajaxSetup({watch: settings.lite.watchXHR});
                             $.ajax = function (ajax_super) {
                                 return function (options) {
-                                    var xhr = ajax_super(options);
-                                    var opts = $.extend({}, $.ajaxSettings, options);
+                                    var opts = $.extend(true, {}, $.ajaxSettings, options);
+                                    var xhr = ajax_super.apply(this, arguments);
                                     if (opts && opts.watch) {
                                         window.firebug.watchXHR(xhr);
                                     }
                                     return xhr;
                                 };
-                            }(ajax_super);
+                            }($.ajax);
 
                             // re-map console commands to Firebug Lite commands
                             var groupStack = [];

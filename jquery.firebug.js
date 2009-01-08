@@ -6,10 +6,12 @@
  * test Safari (with console)
  * test Opera (Dragonfly)
  * test Firefox (with/without, enabled/disabled, suspended Firebug)
- 
+ * 
  * handle firebug.inspect method
  * better grouping in FbLite
  * support FbLite firebug.d.console.cmd fallbacks
+ * 
+ * string formatting doesn't work
  */
 
 (function ($) {
@@ -41,7 +43,7 @@
             if ((!(window.console && window.console.firebug) && settings.debug) || force) {
                 $(document).ready(function () {
                     var firebug = document.createElement('script');
-                    firebug.setAttribute('src', $.firebug.defaults.lite.src);
+                    firebug.setAttribute('src', settings.lite.src);
                     document.body.appendChild(firebug);
 					(function(){
                         if (window.firebug && window.firebug.version) {
@@ -129,14 +131,21 @@
 
         mountFirebug: function (options) {
             var settings = $.extend({}, $.firebug.defaults, options);
+			
+		    // create basic console object if it doesn't exist
+		    if (!window.console) {
+		        window.console = {};
+		    }
+
             // foreach Firebug method, create an associated jQuery function
             for (var method in settings.methods) {
                 if (settings.methods.hasOwnProperty(method)) {
                     // set a blank function foreach console method to avoid 'function undefined' errors
-// TODO figure out window.console existance (w/ & w/out Firebug proper, w/ & w/out Firebug Lite)
-//                    if (!window.console[settings.methods[method]]) {
-//                        window.console[settings.methods[method]] = function () {return true;}();
-//                    }
+                    if (!window.console[settings.methods[method]]) {
+                        window.console[settings.methods[method]] = (function() {
+							return function () {};
+						});
+                    }
                     switch (settings.methods[method]) {
                     case "log":
                     case "debug":
@@ -258,11 +267,6 @@
         }
     };
 
-    // create basic console object if it doesn't exist
-// TODO figure out window.console existance (w/ & w/out Firebug proper, w/ & w/out Firebug Lite)
-//    if (!window.console) {
-//        window.console = {};
-//    }
     $.firebug.mountFirebugLite(bootstrap);
     $.firebug.mountFirebug(bootstrap);
 })(jQuery);

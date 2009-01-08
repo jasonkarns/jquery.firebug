@@ -104,7 +104,10 @@
                                                 // drop the 'false' argument
                                                 var args = $.makeArray(arguments);
                                                 args.shift();
-                                                window.console.log.apply(window.console, args);
+												window.console.error("Assertion Failed: ");
+												if (args.length) {
+													window.console.error.apply(window.console, args);
+												}
                                             };
                                         }();
                                         break;
@@ -191,14 +194,14 @@
                         // group the jQuery object and call assert on each item
                         $.fn[settings.methods[method]] = function (method) {
                             return function () {
-                                if (arguments.length) {
-                                    window.console[method].apply(window.console, arguments);
-                                }
-                                window.console.group(this);
-                                this.each(function (i) {
-                                    window.console[method](false, this);
-                                });
-                                window.console.groupEnd();
+								if (arguments.length && !arguments[0]) {
+									window.console[method].apply(window.console, arguments);
+									window.console.group(this);
+									this.each(function(i){
+										window.console.error(this);
+									});
+									window.console.groupEnd();
+								}
                                 return this;
                             };
                         }(settings.methods[method]);

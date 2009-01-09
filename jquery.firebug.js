@@ -133,8 +133,19 @@
             var settings = $.extend({}, $.firebug.defaults, options);
 			
 		    // create basic console object if it doesn't exist
-		    if (!window.console) {
+		    if (!window.console && !settings.debug) {
 		        window.console = {};
+		        for (var method in settings.methods) {
+					if (settings.methods.hasOwnProperty(method)) {
+						// set a blank function foreach console method to avoid 'function undefined' errors
+						if (!window.console[settings.methods[method]]) {
+							window.console[settings.methods[method]] = (function(){
+								return function(){
+								};
+							});
+						}
+					}
+				}
 		    }
 
             // foreach Firebug method, create an associated jQuery function

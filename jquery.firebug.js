@@ -16,6 +16,8 @@
  * support console utility methods (open/close, minimize/maximize, clear, run)
  * 
  * reconfigure log() behavior
+ * 
+ * allow runtime changes in settings
  */
 
 (function ($) {
@@ -38,7 +40,8 @@
 				height: 295,
                 watchXHR: true
             },
-            methods: ["assert", "log", "debug", "info", "warn", "error", "dir", "dirxml", "count", "trace", "group", "groupEnd", "time", "timeEnd", "profile", "profileEnd"]
+            methods: ["assert", "log", "debug", "info", "warn", "error", "dir", "dirxml", "count", "trace", "group", "groupEnd", "time", "timeEnd", "profile", "profileEnd"],
+			enumerateContents: false
         },
 
         mountFirebugLite: function (options) {
@@ -168,7 +171,7 @@
                     case "info":
                     case "warn":
                     case "error":
-                        $.fn[settings.methods[method]] = function (method) {
+                        $.fn[settings.methods[method]] = function (settings, method) {
                             return function () {
                                 // parse out jQuery '.method' commands to call on jQuery object
                                 $.each(arguments, function(self, args){
@@ -186,94 +189,94 @@
                                 if (arguments.length) {
                                     window.console[method].apply(window.console, arguments);
                                 }
-                                // group this jQuery object, calling the method on each item
-                                window.console.group(this);
-                                this.each(function (i) {
-                                    window.console[method](this);
-                                });
-                                window.console.groupEnd();
-                                return this;
-                            };
-                        }(settings.methods[method]);
-                        break;
-                    case "dir":
-                    case "dirxml":
-                        $.fn[settings.methods[method]] = function (method) {
-                            return function () {
-                                if (arguments.length) {
-                                    window.console[method].apply(window.console, arguments);
-                                }
-                                // group this jQuery object, calling the method on each item
-                                window.console.group(this);
-                                this.each(function (i) {
-                                    window.console.group(this);
-                                    window.console[method](this);
-                                    window.console.groupEnd();
-                                });
-                                window.console.groupEnd();
-                                return this;
-                            };
-                        }(settings.methods[method]);
-                        break;
-                    case "assert":
-                        // group the jQuery object and call assert on each item
-                        $.fn[settings.methods[method]] = function (method) {
-                            return function () {
-								if (arguments.length && !arguments[0]) {
-									window.console[method].apply(window.console, arguments);
+
+								if (settings.enumerateContents) {
+									// group this jQuery object, calling the method on each item
 									window.console.group(this);
 									this.each(function(i){
-										window.console.error(this);
+										window.console[method](this);
 									});
 									window.console.groupEnd();
 								}
                                 return this;
                             };
-                        }(settings.methods[method]);
+                        }(settings, settings.methods[method]);
+                        break;
+                    case "dir":
+                    case "dirxml":
+                        $.fn[settings.methods[method]] = function (settings, method) {
+                            return function () {
+                                if (arguments.length) {
+                                    window.console[method].apply(window.console, arguments);
+                                }
+
+								if (settings.enumerateContents) {
+									// group this jQuery object, calling the method on each item
+									window.console.group(this);
+									this.each(function(i){
+										window.console.group(this);
+										window.console[method](this);
+										window.console.groupEnd();
+									});
+									window.console.groupEnd();
+								}
+                                return this;
+                            };
+                        }(settings, settings.methods[method]);
+                        break;
+                    case "assert":
+                        // group the jQuery object and call assert on each item
+                        $.fn[settings.methods[method]] = function (settings, method) {
+                            return function () {
+								if (arguments.length && !arguments[0]) {
+									window.console[method].apply(window.console, arguments);
+									
+									if (settings.enumerateContents) {
+										window.console.group(this);
+										this.each(function(i){
+											window.console.error(this);
+										});
+										window.console.groupEnd();
+									}
+								}
+                                return this;
+                            };
+                        }(settings, settings.methods[method]);
                         break;
                     case "time":
                     case "timeEnd":
                     case "group":
                     case "groupEnd":
                         // apply these commands directly (add jQuery object as arg0), return the jQuery object
-                        $.fn[settings.methods[method]] = function (method) {
+                        $.fn[settings.methods[method]] = function (settings, method) {
                             return function () {
                                 var args = (arguments.length? arguments : [this]);
                                 window.console[method].apply(window.console, args);
                                 return this;
                             };
-                        }(settings.methods[method]);
+                        }(settings, settings.methods[method]);
                         break;
                     case "trace":
                         // apply these commands directly, returning the jQuery object
-                        $.fn[settings.methods[method]] = function (method) {
+                        $.fn[settings.methods[method]] = function (settings, method) {
                             return function () {
                                 window.console.group("Trace: ", this);
                                 window.console[method].apply(window.console, arguments);
                                 window.console.groupEnd();
                                 return this;
                             };
-                        }(settings.methods[method]);
-                        break;
-                    case "profile":
-                        // apply these commands directly, returning the jQuery object
-                        $.fn[settings.methods[method]] = function (method) {
-                            return function () {
-                                window.console.debug(this);
-                                window.console[method].apply(window.console, arguments);
-                                return this;
-                            };
-                        }(settings.methods[method]);
+                        }(settings, settings.methods[method]);
                         break;
                     case "count":
+                    case "profile":
                     case "profileEnd":
                         // apply these commands directly, returning the jQuery object
-                        $.fn[settings.methods[method]] = function (method) {
+                        $.fn[settings.methods[method]] = function (settings, method) {
                             return function () {
                                 window.console[method].apply(window.console, arguments);
                                 return this;
                             };
-                        }(settings.methods[method]);
+                        }(settings, settings.methods[method]);
                         break;
                     default:
                         break;

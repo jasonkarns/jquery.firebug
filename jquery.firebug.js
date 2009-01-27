@@ -177,13 +177,16 @@
                                 $.each(arguments, function(self, args){
                                     return function(key, value){
                                         var found = false;
-                                        if (value && value.match && (found = value.match(/^\.(([a-zA-Z]+[a-zA-Z0-9_\-]*)\(.*\))$/))) {
+                                        if (value && value.match && (found = value.match(/^\.(([a-zA-Z]+[a-zA-Z0-9_\-]*)(?:\(.*\))?)$/))) {
                                             if ($(self)[found[2]]) {
                                                 with ($(self)) {
                                                     args[key] = eval(found[1]);
                                                 }
                                             }
                                         }
+										else if(value == "this"){
+											args[key] = $(self);
+										}
                                     };
                                 }(this, arguments));
                                 if (arguments.length) {

@@ -1,14 +1,15 @@
 /*global jQuery */
 
 /* TODO:
+ *
+ * map native console commands to accept multiple arguments
  * 
- * test IE (diff versions) (with/without DebugBar etc.)
- * test Safari (with console)
- * test Opera (Dragonfly)
- * test Firefox (with/without, enabled/disabled, suspended Firebug)
+ * weird issue with
  * 
  * handle firebug.inspect method
+ *
  * better grouping in FbLite
+ * 
  * support FbLite firebug.d.console.cmd fallbacks
  * 
  * string formatting doesn't work
@@ -18,6 +19,8 @@
  * reconfigure log() behavior
  * 
  * allow runtime changes in settings
+ * 
+ * support groupCollapsed()
  */
 
 (function ($) {
@@ -73,9 +76,6 @@
 						
                         window.firebug.init();
 						
-						// Be sure ALL console methods are available
-						$.firebug.mountConsole(settings);
-
                         // Open to desired state - window.firebug.win.close();
                         if (settings.lite.minimized) {
 							window.firebug.win.minimize();
@@ -97,7 +97,7 @@
                             };
                         }($.ajax);
 
-                        // re-map console commands to Firebug Lite commands
+                        // re-map missing console commands to Firebug Lite commands
                         var groupStack = [];
                         for (var method in settings.methods) {
                             if (settings.methods.hasOwnProperty(method)) {
@@ -288,28 +288,86 @@
             }
         },
 
-		mountConsole: function (options) {
+		mountConsole: function (options, baseMethod) {
 			var settings = $.extend(true, {}, $.firebug.defaults, options);
-			
-		    // create basic console object if it doesn't exist
+		    
 		    if (!window.console) {
+				if(!window.opera || !window.opera.postError){
+					// Safari and Chrome have console.log
+					// Opera has opera.postError
+					// IE (with addons) has console
+					// Firefox (with Firebug) has console
+					// All others need Firebug Lite to create console
+					return false;
+				}
 				window.console = {};
 			}
-			
-			// Build Console API fallbacks
-		    for (var method in settings.methods) {
-				if (settings.methods.hasOwnProperty(method) && !window.console[settings.methods[method]]) {
-					if (!settings.debug) {
-						// kill function undefined errors if debugging is disabled
-						window.console[settings.methods[method]] = function(){};
-					} else if(window.opera && window.opera.postError){
-						// use Opera
-						window.console[settings.methods[method]] = window.opera.postError;
-					} else if(method != "log"){
-						// use 3rd party log methods
-						window.console[settings.methods[method]] = window.console.log;
-					} else {
-						window.console[settings.methods[method]] = alert;
+
+			// for Opera
+			if(window.opera && window.opera.postError){
+			    for (var method in settings.methods) {
+					if (settings.methods.hasOwnProperty(method)) {
+						window.console[settings.methods[method]] = (function(method){
+							return function(){
+								var msg = method + ": " + arguments.join(" ");
+								window.opera.postError(msg);
+							};
+						})(settings.methods[method]);
+					}
+				}
+			}
+			// for Safari, Chrome, IE
+			else {
+				// set log() method as base method
+				if(!window.console.log){
+					window.console.log = baseMethod || function(){};
+				}
+				
+			    for (var method in settings.methods) {
+					if (settings.methods.hasOwnProperty(method)) {
+						switch(settings.methods[method]){
+		                case "log":
+		                case "debug":
+		                case "info":
+		                case "warn":
+		                case "error":
+							if (window.console[settings.methods[method]]) {
+								window.console["_" + settings.methods[method]] = window.console[settings.methods[method]];
+								window.console[settings.methods[method]] = (function(method){
+									return function(){
+										window.console["_" + method]($.makeArray(arguments).join(" "));
+									};
+								})(settings.methods[method]);
+							}
+							else {
+								window.console[settings.methods[method]] = function(){
+									var msg = $.makeArray(arguments).join(" ");
+									window.console.log(msg);
+								};
+							}
+							break;
+						case "assert":
+	                    case "dir":
+	                    case "dirxml":
+	                    case "time":
+	                    case "timeEnd":
+	                    case "group":
+	                    case "groupEnd":
+						case "trace":
+	                    case "count":
+	                    case "profile":
+	                    case "profileEnd":
+						default:
+							if (!window.console[settings.methods[method]]) {
+								window.console[settings.methods[method]] = (function(method){
+									return function(){
+										var msg = method + ": " + $.makeArray(arguments).join(" ");
+										window.console.log(msg);
+									};
+								})(settings.methods[method]);
+							}
+							break;
+						}
 					}
 				}
 			}
@@ -318,14 +376,9 @@
 
 	bootstrap = $.extend(true, {}, $.firebug.defaults, bootstrap);
 
-    // if there's no window console or firebug console, (and debugging is turned on)
-    if ((!window.console || !window.console.firebug) && bootstrap.debug) {
-		// import Firebug Lite
+	$.firebug.mountConsole(bootstrap);
+	if (!window.console) {
 		$.firebug.mountFirebugLite(bootstrap);
-	} else {
-		// else, be sure all console.* methods exist
-		$.firebug.mountConsole(bootstrap);
 	}
-	
-    $.firebug.mountFirebug(bootstrap);
+	$.firebug.mountFirebug(bootstrap);
 })(jQuery);
